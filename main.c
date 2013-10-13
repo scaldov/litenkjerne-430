@@ -23,27 +23,36 @@ static NO_REG_SAVE void main_thread_func (void)
 
 static NO_REG_SAVE void btn_thread_func (void)
 {
+	char str[16];
 	while(1){
 		uart_write("Hallo vaarlden!\n", 16);
 		krn_sleep(100);
 		P1OUT ^= BIT6;
+	    kout_uart("sec=");
+		kout_uart(kout_u32d(str + 12, krn_timer_cnt / KRN_FREQ));
+		kout_uart("\n");
 	}
 }
 
-int rx_eof(char c) {
+//EOL filter
+int rx_eol(char c) {
 	return c < ' ' ? 0 : 1;
 }
 
 static NO_REG_SAVE void io_thread_func (void)
 {
 	char bfr[16];
+	char str[16];
 	int l;
-	uart_rx_callback = rx_eof;
+	uart_rx_callback = rx_eol;
 	while(1) {
 		l = uart_read(bfr, 16);
-		uart_write("\t\tbfr=", 6);
+		kout_uart("\t\tbfr=");
 		uart_write(bfr, l);
-		uart_write("\n", 1);
+		kout_uart("\n");
+	    kout_uart("len=");
+		kout_uart(kout_u32d(str, l));
+		kout_uart("\n");
 	}
 }
 
@@ -64,18 +73,18 @@ void main (void){
 	//P1SEL |= BIT6;
 	P1OUT |= BIT0;
 	P1OUT ^= BIT0;
-
+	//button interrupts
 	P1IE |= BIT3;                             // P1.3 interrupt enabled
 	P1IES |= BIT3;                            // P1.3 Hi/lo edge
 	P1IFG &= ~BIT3;                           // P1.3 IFG cleared
-	// Main loop
+	// create threads
 	krn_thread_init();
 	krn_thread_create(&thr_main, (void*)main_thread_func, (void*)1, 1, main_thread_stack, MAIN_THREAD_STACK);
 	krn_thread_create(&thr_btn, (void*)btn_thread_func, (void*)2, 6, btn_thread_stack, MAIN_THREAD_STACK);
 	krn_thread_create(&thr_io, (void*)io_thread_func, (void*)3, 1, io_thread_stack, MAIN_THREAD_STACK);
-	krn_timer_init();
-	uart_init(16000000 / 115200);
-	krn_run();
+	krn_timer_init(); // start base timer
+	uart_init(16000000 / 115200); // init UART
+	krn_run(); // run threads
 }
 
 #pragma vector=PORT1_VECTOR
@@ -83,9 +92,7 @@ __interrupt void Port_1(void)
 {
 	P1OUT ^= BIT0;
 	if((P1IFG & BIT3) == BIT3) {
-		TACCR1 = 1000; // TACCR1 PWM Duty Cycle
 	} else {
-		TACCR1 = 4000; // TACCR1 PWM Duty Cycle
 	}
 	P1IFG = 0x00;   // clear interrupt flags
 }
