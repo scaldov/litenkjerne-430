@@ -47,7 +47,7 @@ extern krn_thread *krn_thread_current;
 extern krn_thread *krn_thr_nearest;
 extern int16_t krn_timer_nearest;
 extern int16_t krn_timer_current;
-extern uint16_t krn_timer_cnt;
+extern int16_t krn_timer_cnt;
 
 extern inline void krn_thread_init();
 extern inline void krn_thread_insert(krn_thread *thr, krn_thread *after);

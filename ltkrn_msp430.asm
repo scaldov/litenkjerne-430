@@ -2,13 +2,13 @@ name liten_kjerne
 
 public krn_context_switch
 public krn_context_load
-public krn_uthread_idle
+;public krn_uthread_idle
 public krn_enter_thread
 
 rseg CODE
 
-krn_uthread_idle:
-jmp krn_uthread_idle
+;krn_uthread_idle:
+;jmp krn_uthread_idle
 
 krn_enter_thread:
 pop r13

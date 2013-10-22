@@ -2,7 +2,7 @@
 //#include "hd44780.h"
 
 uint8_t krn_timer_warp;
-uint16_t krn_timer_cnt;
+int16_t krn_timer_cnt;
 uint8_t krn_dispatch_flag;
 krn_thread thr_uthread_idle;
 krn_thread *krn_thread_current;
@@ -174,9 +174,9 @@ inline void krn_dispatch()
 
 int timer_cnt;
 
-#define TA0_DELTA1 (16000000 / 8 / 500)
-#define TA0_DELTA2 (16000000 / 8 / 250)
-#define TA0_DELTA0 (16000000 / 8 / 125)
+#define TA0_DELTA1 (16000000 / 8 / 5  / KRN_FREQ)
+#define TA0_DELTA2 (16000000 / 8 / 10 / KRN_FREQ)
+#define TA0_DELTA0 (16000000 / 8 / 20 / KRN_FREQ)
 
 #pragma vector = TIMER0_A1_VECTOR
 __interrupt void TA0_tick() {
@@ -185,6 +185,7 @@ __interrupt void TA0_tick() {
 		timer_cnt ++;
 		krn_timer_warp --;
 		if (krn_timer_warp == 0) {
+			_BIC_SR_IRQ(LPM0_bits);
 			krn_timer_cnt ++;
 			krn_timer_current ++;
 			krn_timer_warp = 5;

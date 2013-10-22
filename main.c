@@ -12,6 +12,23 @@
 
 static krn_thread thr_main, thr_btn, thr_io;
 
+void krn_uthread_idle (void)
+{
+	int16_t sys_timeout;
+	sys_timeout = krn_timer_cnt + KRN_FREQ * 10;
+	while(1){
+		if(sys_timeout >  krn_timer_cnt) {
+			_BIS_SR(LPM0_bits + GIE);
+		} else {
+			P1OUT |= BIT6;
+			DCOCTL  = CALDCO_1MHZ;
+			_BIS_SR(LPM4_bits + GIE);
+			DCOCTL  = CALDCO_16MHZ;
+			sys_timeout = krn_timer_cnt + KRN_FREQ * 10;
+		}
+	}
+}
+
 static NO_REG_SAVE void main_thread_func (void)
 {
 	while(1){
@@ -27,7 +44,7 @@ static NO_REG_SAVE void btn_thread_func (void)
 	while(1){
 		uart_write("Hallo vaarlden!\n", 16);
 		krn_sleep(100);
-		P1OUT ^= BIT6;
+		//P1OUT ^= BIT6;
 	    kout_uart("sec=");
 		kout_uart(kout_u32d(str + 12, krn_timer_cnt / KRN_FREQ));
 		kout_uart("\n");
@@ -90,8 +107,9 @@ void main (void){
 #pragma vector=PORT1_VECTOR
 __interrupt void Port_1(void)
 {
-	P1OUT ^= BIT0;
 	if((P1IFG & BIT3) == BIT3) {
+		P1OUT &= ~BIT6;
+		_BIC_SR_IRQ(LPM4_bits);
 	} else {
 	}
 	P1IFG = 0x00;   // clear interrupt flags
